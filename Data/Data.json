@@ -1,13 +1,13 @@
 {
   "present": {
-    "score": 7,
-    "HP": 80,
+    "score": 35,
+    "HP": 100,
     "stats": {
       "level": 1,
       "points": 0,
       "health_upgrade": 1,
       "strenght_upgrade": 1,
-      "experience": 0
+      "experience": 8.5
     }
   },
   "default": {

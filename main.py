@@ -386,7 +386,7 @@ class OverlayingGUI(Sprite):
         # health
         health = self.font_100.render(f'HP: {game.hero.health}', False, '#F70D0D')
         health_progress = self.health_bar.subsurface(
-            (0, 0, 2.91 * (game.hero.health * 100 / (90 + game.hero.stats['health_upgrade'] * 10)), 27))
+            (0, 0, 2.91 * (max(0, game.hero.health) * 100 / (90 + game.hero.stats['health_upgrade'] * 10)), 27))
         self.display_place.blit(health, (100, self.display_place.get_height()
                                          - health.get_height() - 120))
         self.display_place.blit(health_progress, (100, 860))
