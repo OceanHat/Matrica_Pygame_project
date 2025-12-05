@@ -6,6 +6,28 @@ from images import *
 
 
 class Map(SpriteGroup):
+    
+    """
+    Управляет игровой картой, генерацией уровней и физикой движения камеры.
+    
+    Класс отвечает за:
+    - Генерацию карты из матрицы символов
+    - Отрисовку тайлов (блоков) на экране
+    - Обработку столкновений героя с окружением
+    - Обработку столкновений врагов с окружением
+    - Управление движением камеры при перемещении героя
+    - Хранение состояния клавиш управления
+    
+    Атрибуты:
+        map_matrix: List[List[str]] - матрица уровня ('█'=solid, '-'=top, 'B'=barrier)
+        rect_list: List[pygame.Rect] - прямоугольники коллизии для всех блоков
+        image_dict: Dict - словарь загруженных изображений для разных типов блоков
+        pos_x, pos_y: int - смещение камеры (позиция левого верхнего угла)
+        vertical_speed: float - вертикальная скорость камеры
+        horizontal_speed: float - горизонтальная скорость камеры
+        keys: Dict - состояние клавиш управления (up/down/left/right)
+    """
+    
     def __init__(self, map_width, map_height):
         super().__init__()
         self.top_block_image = load_image(r'Map/Dirt_GU.png')
@@ -179,6 +201,29 @@ class Map(SpriteGroup):
 
 
 class Hero(Sprite):
+    
+    """
+    Представляет главного персонажа (киборга) под контролем игрока.
+    
+    Класс управляет:
+    - Анимацией персонажа (idle, jump, attack)
+    - Физикой движения (гравитация, прыжок)
+    - Системой здоровья и урона
+    - Боевой механикой и атакой
+    - Системой опыта и прокачки
+    - Хранением статистики персонажа
+    
+    Атрибуты:
+        health: int - текущее здоровье
+        attack: int - урон при атаке
+        stats: Dict - словарь с уровнем, опытом, бонусами
+        image_*: AnimatedSprite - спрайты для разных состояний
+        rect: pygame.Rect - коллизионный прямоугольник позиции
+        velocity: pygame.math.Vector2 - вектор скорости (x, y)
+        damaged_delay: int - количество кадров неуязвимости после урона
+        is_attacking: bool - идёт ли атака в данный момент
+    """
+    
     def __init__(self, pos_x, pos_y, group):
         super(Hero, self).__init__(group)
         self.score_points = 0
@@ -272,6 +317,27 @@ class Hero(Sprite):
 
 
 class Enemy(Sprite):
+    
+    """
+    Представляет врага на уровне с искусственным интеллектом.
+    
+    Класс управляет:
+    - Движением врага (следование за героем или патрулирование)
+    - Анимацией врага
+    - Системой здоровья врага
+    - Наноением урона герою
+    - Поиском цели (героя)
+    - Обработкой столкновений врага
+    
+    Атрибуты:
+        health: int - текущее здоровье врага
+        image_idle: AnimatedSprite - спрайт покоя
+        rect: pygame.Rect - коллизионный прямоугольник
+        velocity: float - скорость движения врага
+        direction: int - направление движения (-1 влево, 1 вправо)
+        last_side: int - последнее направление, в котором смотрел враг
+    """
+    
     def __init__(self, group):
         super().__init__(group)
         self.horisontal_speed = 0
@@ -322,8 +388,6 @@ class Enemy(Sprite):
         elif self.last_side < 0:
             self.display_place.blit(self.enemy_image.image_frame(), (self.screen_rect.left - 4,
                                                                      self.screen_rect.top - 30))
-        # self.hp_t = game.overlay.font_60.render(f'{self.hp}', True, (255, 0, 0))
-        # self.display_place.blit(self.hp_t, self.screen_rect.topright)
         self.enemy_image.update()
 
     @staticmethod
@@ -336,6 +400,23 @@ class Enemy(Sprite):
 
 
 class OverlayingGUI(Sprite):
+    
+    """
+    Управляет пользовательским интерфейсом (UI) игры.
+    
+    Отвечает за:
+    - Отрисовку меню главного экрана
+    - Отрисовку экрана паузы
+    - Отрисовку экрана смерти
+    - Отрисовку информации о здоровье, уровне, опыте
+    - Отрисовку кнопок и интерактивных элементов
+    - Хранение шрифтов для разных размеров текста
+    
+    Атрибуты:
+        font_60, font_100, font_30: pygame.font.Font - шрифты разных размеров
+        width, height: int - размеры экрана для расчёта позиций элементов
+    """
+    
     def __init__(self, group):
         self.display_place = pygame.display.get_surface()
         super(OverlayingGUI, self).__init__(group)
@@ -462,6 +543,31 @@ def player_side(n):
 
 
 class MainGame:
+    
+    """
+    Главный класс, управляющий всей игрой.
+    
+    Отвечает за:
+    - Управление состоянием игры (меню, игра, пауза, смерть)
+    - Игровой цикл (обновление, отрисовка, обработка событий)
+    - Управление врагами на уровне
+    - Сохранение и загрузку данных игрока
+    - Координация работы других классов (Map, Hero, Enemy, GUI)
+    
+    Состояния:
+        0 - Игра (gameplay)
+        1 - Пауза (pause)
+        2 - Главное меню (menu)
+        3 - Экран смерти (death screen)
+    
+    Атрибуты:
+        paused: int - текущее состояние игры
+        hero: Hero - объект главного персонажа
+        map: Map - объект игровой карты
+        enemy_group: Group - группа врагов на карте
+        overlay: OverlayingGUI - объект пользовательского интерфейса
+    """
+    
     def __init__(self, database):
         self.display_place = pygame.display.get_surface()
         self.paused = 2  # 0-game, 1-pause, 2-menu, 3-death
