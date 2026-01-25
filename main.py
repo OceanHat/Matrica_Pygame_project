@@ -19,7 +19,7 @@ class Map(SpriteGroup):
                           for x in range(len(self.map_matrix[y])) if self.map_matrix[y][x] != ' ']
         self.pos_x = 0
         self.pos_y = 0
-        self.vertical_speed, self.horisontal_speed = 0, 0
+        self.vertical_speed, self.horizontal_speed = 0, 0
         self.up_pressed, self.left_pressed, self.right_pressed, self.down_pressed = False, False, False, False
         self.spawn_point = [0, 0]
 
@@ -46,22 +46,22 @@ class Map(SpriteGroup):
                             self.pos_y -= game.hero.rect.top - self.rect_list[i].bottom
                         return 1
             case 'left':
-                wrects = game.hero.wrect.collidelistall(self.rect_list)
-                if not wrects:
+                wide_rects = game.hero.wide_rect.collidelistall(self.rect_list)
+                if not wide_rects:
                     return 0
-                for i in wrects:
-                    if -4 <= game.hero.wrect.left - self.rect_list[i].right <= 0:
-                        if game.hero.wrect.left - self.rect_list[i].right <= -1:
-                            self.pos_x -= game.hero.wrect.left - self.rect_list[i].right
+                for i in wide_rects:
+                    if -4 <= game.hero.wide_rect.left - self.rect_list[i].right <= 0:
+                        if game.hero.wide_rect.left - self.rect_list[i].right <= -1:
+                            self.pos_x -= game.hero.wide_rect.left - self.rect_list[i].right
                         return 1
             case 'right':
-                wrects = game.hero.wrect.collidelistall(self.rect_list)
-                if not wrects:
+                wide_rects = game.hero.wide_rect.collidelistall(self.rect_list)
+                if not wide_rects:
                     return 0
-                for i in wrects:
-                    if 4 >= game.hero.wrect.right - self.rect_list[i].left >= 0:
-                        if game.hero.wrect.right - self.rect_list[i].left >= 1:
-                            self.pos_x -= game.hero.wrect.right - self.rect_list[i].left
+                for i in wide_rects:
+                    if 4 >= game.hero.wide_rect.right - self.rect_list[i].left >= 0:
+                        if game.hero.wide_rect.right - self.rect_list[i].left >= 1:
+                            self.pos_x -= game.hero.wide_rect.right - self.rect_list[i].left
                         return 1
             case 'bottom':
                 rects = game.hero.rect.collidelistall(self.rect_list)
@@ -103,19 +103,19 @@ class Map(SpriteGroup):
         left, right = self.hero_collides('left'), self.hero_collides('right')
         up, bottom = self.hero_collides('top'), self.hero_collides('bottom')
         if left or right:
-            self.horisontal_speed = 0
+            self.horizontal_speed = 0
         else:
-            self.horisontal_speed *= 0.9
+            self.horizontal_speed *= 0.9
         if self.left_pressed:
             if left:
-                self.horisontal_speed = 0
+                self.horizontal_speed = 0
             else:
-                self.horisontal_speed -= 0.25 if self.horisontal_speed > -2 else 0
+                self.horizontal_speed -= 0.25 if self.horizontal_speed > -2 else 0
         if self.right_pressed:
             if right:
-                self.horisontal_speed = 0
+                self.horizontal_speed = 0
             else:
-                self.horisontal_speed += 0.25 if self.horisontal_speed < 2 else 0
+                self.horizontal_speed += 0.25 if self.horizontal_speed < 2 else 0
 
         if bottom:
             if self.up_pressed:
@@ -125,7 +125,7 @@ class Map(SpriteGroup):
         else:
             self.vertical_speed += 0.23 if self.vertical_speed < 4 else 0
 
-        self.pos_x += self.horisontal_speed
+        self.pos_x += self.horizontal_speed
         self.pos_y += self.vertical_speed
 
     def place(self):
@@ -149,33 +149,33 @@ class Map(SpriteGroup):
         self.place()
 
     def generate(self, x, y, earth_level, max_level):
-        sp = []
-        sp.extend(list([' '] * x for _ in range(y)))
+        terrain_matrix = []
+        terrain_matrix.extend(list([' '] * x for _ in range(y)))
         k = earth_level
         player_placed = False
 
-        for i in range(len(sp[0])):
+        for i in range(len(terrain_matrix[0])):
             n = randint(0, 1)
             k += randint(-n, n)
             if 0 >= k:
                 k = 0
-            elif k >= len(sp):
-                k = len(sp) - 1
+            elif k >= len(terrain_matrix):
+                k = len(terrain_matrix) - 1
             if k < max_level:
                 k = max_level
             if randint(0, 20) == 1 and not player_placed:
                 player_placed = True
-            sp[k][i] = '-'
-            for j in range(k + 1, len(sp)):
-                sp[j][i] = '█'
-        for i in sp:
+            terrain_matrix[k][i] = '-'
+            for j in range(k + 1, len(terrain_matrix)):
+                terrain_matrix[j][i] = '█'
+        for i in terrain_matrix:
             i[0] = 'B' if i[0] == ' ' else i[0]
             i[1] = 'B' if i[1] == ' ' else i[1]
             i[2] = 'B' if i[2] == ' ' else i[2]
             i[-1] = 'B' if i[-1] == ' ' else i[-1]
             i[-2] = 'B' if i[-2] == ' ' else i[-2]
             i[-3] = 'B' if i[-3] == ' ' else i[-3]
-        return sp
+        return terrain_matrix
 
 
 class Hero(Sprite):
@@ -191,7 +191,7 @@ class Hero(Sprite):
         self.pos_x = pos_x + screen.get_width() // 2
         self.pos_y = pos_y + screen.get_height() // 2
         self.rect = self.image_idle.image_frame().get_rect()
-        self.wrect = self.rect.copy()
+        self.wide_rect = self.rect.copy()
         self.attack_rect = pygame.Rect(-1, -1000, 1, 1)
         self.last_side = 1
         self.damaged_delay = 0  # 80
@@ -227,13 +227,13 @@ class Hero(Sprite):
     def acceleration(self):
         self.score_points = ((game.time // 60) * 7) + self.old_score
         self.rect = pygame.Rect((self.pos_x + 12, self.pos_y + 15), (32, 76))
-        self.wrect = pygame.Rect((self.pos_x + 8, self.pos_y + 24), (40, 65))
+        self.wide_rect = pygame.Rect((self.pos_x + 8, self.pos_y + 24), (40, 65))
         game.hero_group.update()
         if 80 >= self.damaged_delay >= 75 or 60 >= self.damaged_delay >= 55:
-            if game.map.horisontal_speed > 0 or self.last_side == 1:
+            if game.map.horizontal_speed > 0 or self.last_side == 1:
                 image = pygame.transform.flip(self.image_hit, True, False)
                 screen.blit(image, (self.pos_x - 40, self.pos_y - 5))
-            elif game.map.horisontal_speed < 0 or self.last_side == -1:
+            elif game.map.horizontal_speed < 0 or self.last_side == -1:
                 screen.blit(self.image_hit, (self.pos_x, self.pos_y - 5))
         elif self.hit_delay == 0:
             self.image_attack.cur_frame = 0
@@ -241,7 +241,7 @@ class Hero(Sprite):
             if not game.map.hero_collides('bottom'):
                 self.image_update(self.image_jump)
                 self.image_run.cur_frame = 0
-            elif not (1 > game.map.horisontal_speed > -1):
+            elif not (1 > game.map.horizontal_speed > -1):
                 self.image_update(self.image_run)
                 self.image_jump.cur_frame = 0
             else:
@@ -253,9 +253,9 @@ class Hero(Sprite):
             self.image_run.cur_frame = 0
             self.image_jump.cur_frame = 0
             self.hit_delay -= 1
-        if game.map.horisontal_speed > 0:
+        if game.map.horizontal_speed > 0:
             self.last_side = 1
-        elif game.map.horisontal_speed < 0:
+        elif game.map.horizontal_speed < 0:
             self.last_side = -1
         self.damaged_delay -= 1 if self.damaged_delay > 0 else 0
         if self.health < 0:
@@ -274,7 +274,7 @@ class Hero(Sprite):
 class Enemy(Sprite):
     def __init__(self, group):
         super().__init__(group)
-        self.horisontal_speed = 0
+        self.horizontal_speed = 0
         self.vertical_speed = 0
         self.display_place = pygame.display.get_surface()
         self.enemy_image = AnimatedSprite(load_image(r'enemy_run.png'), 6, 1, 96, 96, group)
@@ -293,9 +293,9 @@ class Enemy(Sprite):
         self.coords = [self.rect.left, self.rect.top]
         self.last_side = player_side(self.screen_rect.centerx - game.hero.rect.centerx)
         move = player_side((self.display_place.get_width() // 2) - self.screen_rect.left + 5)
-        self.horisontal_speed += move * 0.25
-        if -2 > self.horisontal_speed or self.horisontal_speed > 2:
-            self.horisontal_speed = max(-2, min(self.horisontal_speed, 2))
+        self.horizontal_speed += move * 0.25
+        if -2 > self.horizontal_speed or self.horizontal_speed > 2:
+            self.horizontal_speed = max(-2, min(self.horizontal_speed, 2))
         if game.map.enemy_collides('bottom', self):
             self.vertical_speed = 0
         else:
@@ -303,15 +303,15 @@ class Enemy(Sprite):
         if game.map.enemy_collides('in_bottom', self):
             self.vertical_speed = -1
         if game.map.enemy_collides('hero', self) and game.hero.damaged_delay == 0:
-            game.map.horisontal_speed -= player_side(self.screen_rect.centerx - game.hero.rect.centerx) * 20
+            game.map.horizontal_speed -= player_side(self.screen_rect.centerx - game.hero.rect.centerx) * 20
             game.map.vertical_speed -= 5
             game.hero.damaged_delay = 80
             game.hero.health -= game.hero.stats['level'] * 5
         if game.map.enemy_collides('attack', self):
-            self.horisontal_speed *= -10
+            self.horizontal_speed *= -10
             self.vertical_speed = -3
             self.hp -= game.hero.stats['strenght_upgrade'] * 10
-        self.coords[0] += self.horisontal_speed
+        self.coords[0] += self.horizontal_speed
         self.coords[1] += self.vertical_speed
         self.rect = pygame.Rect(self.coords[0], self.coords[1], 66, 64)
         self.screen_rect = pygame.Rect(self.coords[0] + 2 - game.map.pos_x,
@@ -661,14 +661,14 @@ class MainGame:
                 self.death_screen()
 
     def enemy_update(self):
-        sp = []
+        enemy_matrix = []
         for i in range(len(self.enemy_list)):
             self.enemy_list[i].acceleration()
             if self.enemy_list[i].hp <= 0:
                 self.enemy_list[i].level()
             else:
-                sp.append(self.enemy_list[i])
-        self.enemy_list = list(set(sp))
+                enemy_matrix.append(self.enemy_list[i])
+        self.enemy_list = list(set(enemy_matrix))
 
     def data_save(self):
         self.data["present"] = {"score": self.hero.score_points,
